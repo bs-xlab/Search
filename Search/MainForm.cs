@@ -42,9 +42,6 @@ namespace Search
             ExecuteExternalAction(() =>
             {
                 Search.Enabled = true;
-                Progress.Value = 99;
-
-                Thread.Sleep(2000);
                 Progress.Visible = false;
             });
         }
@@ -77,6 +74,7 @@ namespace Search
                             var k = Convert.ToInt32(label1.Text);
                             label1.Text = (++k).ToString();
 
+                            ListBox.Items.Clear();
                             var result = Worker.FindProducts(Search.Text);
 
                             if (result.Count == 0)

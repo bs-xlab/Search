@@ -51,31 +51,18 @@ namespace Search.Modules.Models
             Root = new Node(new bool[arrayCapacity]);
         }
 
-        public List<Node> FindString(string input, List<string> mainSyllables)
+        public (List<Node> Result, Node FoundedNode) FindString(string input, List<string> mainSyllables)
         {
             var result = new List<Node>();
             input = input.Trim();
 
-            var inputWords = input.Split(' '); 
+            var inputWords = input.Split(' ');
             var lastWord = inputWords.LastOrDefault();
+
+            var foundedNode = new Node(new bool[mainSyllables.Count]);
 
             if (!(lastWord is null))
             {
-                //var allSyllables = new List<string>();
-
-                //if (inputWords.Count() > 1)
-                //{
-                //    var otherWords = inputWords.Take(inputWords.Count() - 1).ToList();
-
-                //    var mainSyllables = otherWords.SelectMany(b =>
-                //            Regex.IsMatch(b, "^[а-я0-9 ]+$")
-                //                ? b.GetSyllablesWithoutEndings()
-                //                : b.GetSeparatedStringEng())
-                //            .Distinct()
-                //            .ToList();
-
-                //    allSyllables.AddRange(mainSyllables);
-                //}
 
                 var offset = 0;
                 while (lastWord.Substring(0, lastWord.Length - offset) != string.Empty && result.Count == 0)
@@ -87,8 +74,6 @@ namespace Search.Modules.Models
                                 : targetString.GetSeparatedStringEng())
                             .Distinct()
                             .ToList();
-
-                    //allSyllables.AddRange(syllables);
 
                     bool found = false;
                     var hash = new bool[ArrayCapacity];
@@ -105,34 +90,23 @@ namespace Search.Modules.Models
 
                     if (found)
                     {
-                        var node = Root.FindHash(hash);
+                        foundedNode = Root.FindHash(hash);
 
-                        if (!(node is null))
+                        if (!(foundedNode is null))
                         {
-                            node.GetChildren(result);
+                            foundedNode.GetChildren(result);
                         }
                     }
                     offset++;
-
-                    //allSyllables.Take(allSyllables.Count - syllables.Count).ToList();
                 }
             }
 
-            return result;
+            return (result, foundedNode);
         }
 
         public void AddNode(List<List<int>> indexesList)
         {
             indexesList.ForEach(l => Root.AddNote(l, false));
-
-            //for (int offset = 0; offset < indexesList.Count; offset++)
-            //{
-            //    var list = indexesList.Skip(offset).Take(indexesList.Count - offset).ToList();
-            //    list.AddRange(indexesList.Take(offset));
-
-            //    var indexes = list.SelectMany(l => l).ToList();
-            //    Root.AddNote(indexes, offset == 0);
-            //}
         }
 
         public class Node
@@ -319,6 +293,41 @@ namespace Search.Modules.Models
             }
 
             public static bool operator !=(bool[] hash, Node first) => !(hash == first);
+        }
+    }
+
+    public class NodesSorter : IComparer<Graph.Node>
+    {
+        Graph.Node _pattern;
+
+        public NodesSorter(Graph.Node pattern) => _pattern = pattern;
+
+        public int Compare(Graph.Node first, Graph.Node second)
+        {
+            int index = 0;
+
+            var countFirstPositions = 0;
+            Array.ForEach(first.HashSum, h =>
+            {
+                if (h ^ _pattern.HashSum[index]) countFirstPositions++;
+                index++;
+            });
+
+            index = 0;
+
+            var countSecondPositions = 0;
+            Array.ForEach(second.HashSum, h =>
+            {
+                if (h ^ _pattern.HashSum[index]) countSecondPositions++;
+                index++;
+            });
+
+            if (countFirstPositions > countSecondPositions)
+            {
+                return 1;
+            }
+
+            return countFirstPositions == countSecondPositions ? 0 : -1;
         }
     }
 }

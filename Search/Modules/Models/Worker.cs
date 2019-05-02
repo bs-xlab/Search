@@ -31,7 +31,7 @@ namespace Search.Modules.Models
 
         public void InitSystem()
         {
-            // Data loading - 5 sec
+            // Data loading
             var data = Repository.LoadSystemData();
 
             var brands = Repository.CastFrom<BrandModel>(data);
@@ -55,9 +55,6 @@ namespace Search.Modules.Models
             //    new GroupModel { Name = "фасадная плитка"},
             //};
             #endregion
-
-            // ONE 5
-            FormInterface.ChangeProgressBarValue(5);
 
             // Deleting a redundant symbols
             groups.ForEach(g =>
@@ -90,20 +87,16 @@ namespace Search.Modules.Models
                 .OrderByDescending(k => k.Value)
                 .Select(x => x.Key).ToList();
 
-            // TWO 10
-            FormInterface.ChangeProgressBarValue(10);
-
             // Product filtering - 75 sec
             products = products.Where(p =>
                !(groups.FirstOrDefault(g => g.ID == p.GroupID) is null) &&
                !(brands.FirstOrDefault(b => b.ID == p.BrandID) is null) &&
                p.BrandID != 0 && p.GroupID != 0)
                .ToList();
+            
+            FormInterface.ChangeProgressBarValue(4);
 
-            // THREE 15
-            FormInterface.ChangeProgressBarValue(15);
-
-            // Set products syllables - 206 sec
+            // Set products syllables
             products.ForEach(p =>
             {
                 var brandName = brands.First(b => b.ID == p.BrandID).Name;
@@ -134,11 +127,10 @@ namespace Search.Modules.Models
 
                 p.FullIdentity = $"{groupName} {brandName} {p.Name}";
             });
+            
+            FormInterface.ChangeProgressBarValue(14);
 
-            // FOUR 20
-            FormInterface.ChangeProgressBarValue(20);
-
-            // Product Sorting - 22 sec
+            // Product Sorting
             products = products.OrderBy(p =>
                 p.Syllables.Select(s => Syllables.IndexOf(s))
                     .Where(i => i != -1).Min())
@@ -146,12 +138,11 @@ namespace Search.Modules.Models
                     .ToList();
 
             ProductHashDict = new Dictionary<Graph.Node, List<ProductModel>>();
-
-            // FIVE 25
-            FormInterface.ChangeProgressBarValue(25);
+            
+            FormInterface.ChangeProgressBarValue(15);
             var productCount = 1;
 
-            // Hash dict creating - 1800 sec
+            // Hash dict creating
             products.ForEach(p =>
             {
                 bool validHash = false;
@@ -178,15 +169,13 @@ namespace Search.Modules.Models
                     ProductHashDict[node].Add(p);
                 }
 
-                if (products.Count > 60 && productCount++ % (products.Count / 60) == 0)
+                if (products.Count > 84 && productCount++ % (products.Count / 84) == 0)
                 {
                     FormInterface.ChangeProgressBarValue(increment: true);
                 }
             });
-
-            // SIX 85
-            FormInterface.ChangeProgressBarValue(85);
-
+            
+            FormInterface.ChangeProgressBarValue(99);
             Graph = Graph.GetInstance(Syllables.Count);
 
             // Graph building
@@ -201,10 +190,12 @@ namespace Search.Modules.Models
         public List<string> FindProducts(string input)
         {
             var result = new List<string>();
-            var outputs = Graph.FindString(input, Syllables);
+            var output = Graph.FindString(input, Syllables);
 
+            output.Result.Sort(new NodesSorter(output.FoundedNode));
             var count = 0;
-            outputs?.ForEach(c =>
+
+            output.Result.ForEach(c =>
             {
                 if (ProductHashDict.ContainsKey(c))
                 {
