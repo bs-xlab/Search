@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Search
@@ -51,17 +52,41 @@ namespace Search
         public List<Node> FindString(string input)
         {
             var result = new List<Node>();
-
             input = input.Trim();
-            var lastWord = input.Split(' ').LastOrDefault();
+
+            var inputWords = input.Split(' '); 
+            var lastWord = inputWords.LastOrDefault();
 
             if (!(lastWord is null))
             {
+                //var allSyllables = new List<string>();
+
+                //if (inputWords.Count() > 1)
+                //{
+                //    var otherWords = inputWords.Take(inputWords.Count() - 1).ToList();
+
+                //    var mainSyllables = otherWords.SelectMany(b =>
+                //            Regex.IsMatch(b, "^[а-я0-9 ]+$")
+                //                ? b.GetSyllablesWithoutEndings()
+                //                : b.GetSeparatedStringEng())
+                //            .Distinct()
+                //            .ToList();
+
+                //    allSyllables.AddRange(mainSyllables);
+                //}
+
                 var offset = 0;
                 while (lastWord.Substring(0, lastWord.Length - offset) != string.Empty && result.Count == 0)
                 {
                     var targetString = input.Substring(0, input.Length - offset);
-                    var syllables = targetString.GetSeparatedString().Distinct().ToList();
+
+                    var syllables = (Regex.IsMatch(targetString, "^[а-я0-9 ]+$")
+                                ? targetString.GetSyllablesWithoutEndings()
+                                : targetString.GetSeparatedStringEng())
+                            .Distinct()
+                            .ToList();
+
+                    //allSyllables.AddRange(syllables);
 
                     bool found = false;
                     var hash = new bool[Form1.Syllables.Count];
@@ -86,6 +111,8 @@ namespace Search
                         }
                     }
                     offset++;
+
+                    //allSyllables.Take(allSyllables.Count - syllables.Count).ToList();
                 }
             }
 
@@ -110,6 +137,7 @@ namespace Search
         {
             public bool[] HashSum { get; set; }
             bool EndPoint = false;
+            int _hashCode;
 
             public Node Parent { get; set; }
             public Node LeftNode { get; set; }
@@ -120,37 +148,42 @@ namespace Search
                 HashSum = hash;
                 Parent = parent;
 
-                //var count = hash.Length / 64 + 1;
-                //var codes = new ulong[count];
+                CreateHashCode(hash);
+            }
 
-                //for (int i = 0; i < count; i++)
-                //{
-                //    var code = new StringBuilder();
+            void CreateHashCode(bool[] hash)
+            {
+                var count = hash.Length / 64 + 1;
+                var codes = new ulong[count];
 
-                //    var partOfNumber = hash.Skip(i * 64).Take(64).ToList();
-                //    partOfNumber.ForEach(n =>
-                //    {
-                //        if (n)
-                //        {
-                //            code.Append("1");
-                //        }
-                //        else
-                //        {
-                //            code.Append("0");
-                //        }
-                //    });
+                for (int i = 0; i < count; i++)
+                {
+                    var code = new StringBuilder();
 
-                //    codes[i] = Convert.ToUInt64(code.ToString(), 2);
-                //}
+                    var partOfNumber = hash.Skip(i * 64).Take(64).ToList();
+                    partOfNumber.ForEach(n =>
+                    {
+                        if (n)
+                        {
+                            code.Append("1");
+                        }
+                        else
+                        {
+                            code.Append("0");
+                        }
+                    });
 
-                //var resultCode = new StringBuilder();
-                //for (int i = 0; i < codes.Length; i++)
-                //{
-                //    var tabs = new string('0', Math.Pow(2, 64).ToString().Length - codes[i].ToString().Length);
-                //    resultCode.Append(tabs + codes[i].ToString());
-                //}
+                    codes[i] = Convert.ToUInt64(code.ToString(), 2);
+                }
 
-                //_hashCode = resultCode.ToString().GetHashCode();
+                var resultCode = new StringBuilder();
+                for (int i = 0; i < codes.Length; i++)
+                {
+                    var tabs = new string('0', Math.Pow(2, 64).ToString().Length - codes[i].ToString().Length);
+                    resultCode.Append(tabs + codes[i].ToString());
+                }
+
+                _hashCode = resultCode.ToString().GetHashCode();
             }
 
             public void AddNote(List<int> indexes, bool endPoint)
@@ -190,12 +223,9 @@ namespace Search
                 }
             }
 
-            public override bool Equals(object obj)
-            {
-                return ((Node)obj).HashSum == this;
-            }
+            public override bool Equals(object obj) => true; // ((Node)obj).HashSum == this;
 
-            public override int GetHashCode() => 0; // _hashCode;
+            public override int GetHashCode() => _hashCode;
 
             bool[] CloneAndAddIndex(bool[] hash, int newIndex)
             {
@@ -273,14 +303,17 @@ namespace Search
 
             public static bool operator ==(bool[] hash, Node first)
             {
-                bool isEqual = true;
+                var targetNode = new Node(hash);
+                return targetNode.GetHashCode() == first.GetHashCode();
 
-                for (int j = 0; j < first.HashSum.Length; j++)
-                {
-                    isEqual &= hash[j] == first.HashSum[j];
-                }
+                //bool isEqual = true;
 
-                return isEqual;
+                //for (int j = 0; j < first.HashSum.Length; j++)
+                //{
+                //    isEqual &= hash[j] == first.HashSum[j];
+                //}
+
+                //return isEqual;
             }
 
             public static bool operator !=(bool[] hash, Node first) => !(hash == first);

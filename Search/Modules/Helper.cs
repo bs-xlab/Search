@@ -141,40 +141,46 @@ namespace Search
 
         public static List<string> GetSeparatedStringEng(this string input)
         {
-            input = input.Trim();
-            var result = new List<string>();
-
-            var vowels = "eyuioa".ToCharArray();
-            var syllable = new StringBuilder();
-
-            for (int i = 0; i < input.Length; i++)
+            if (input.Contains(' '))
             {
-                if (input[i] != ' ')
+                var words = new List<string>();
+                Array.ForEach(input.Split(' '), w => words.AddRange(w.GetSeparatedStringEng()));
+
+                return words;
+            }
+            else
+            {
+                var result = new List<string>();
+
+                var vowels = "eyuioa".ToCharArray();
+                var syllable = new StringBuilder();
+
+                for (int i = 0; i < input.Length; i++)
                 {
                     syllable.Append(input[i]);
-                }
 
-                if (vowels.Contains(input[i]) && !string.IsNullOrEmpty(syllable.ToString()))
-                {
-                    if (i != input.Length - 1)
+                    if (vowels.Contains(input[i]) && !string.IsNullOrEmpty(syllable.ToString()))
                     {
-                        var nextLetters = input.Substring(i + 1);
-                        var spaceIndex = nextLetters.IndexOf(' ');
-
-                        var nextIndex = spaceIndex == -1 ? input.Length - i - 1 : spaceIndex;
-                        if (input.Substring(i + 1, nextIndex).Intersect(vowels).Count() == 0)
+                        if (i != input.Length - 1)
                         {
-                            syllable.Append(input.Substring(i + 1, nextIndex));
-                            i++;
+                            var nextLetters = input.Substring(i + 1);
+                            var spaceIndex = nextLetters.IndexOf(' ');
+
+                            var nextIndex = spaceIndex == -1 ? input.Length - i - 1 : spaceIndex;
+                            if (input.Substring(i + 1, nextIndex).Intersect(vowels).Count() == 0)
+                            {
+                                syllable.Append(input.Substring(i + 1, nextIndex));
+                                i++;
+                            }
                         }
+
+                        result.Add(syllable.ToString());
+                        syllable.Clear();
                     }
-
-                    result.Add(syllable.ToString());
-                    syllable.Clear();
                 }
-            }
 
-            return result;
+                return result.Take(result.Count / 2 + 1).ToList();
+            }
         }
 
         /// <summary> Добавляем слог в массив и начинаем новый слог </summary>
@@ -211,14 +217,14 @@ namespace Search
             }
         }
 
-        public static string DeleteEndings(this string input)
+        public static List<string> GetSyllablesWithoutEndings(this string input)
         {
             if (input.Contains(' '))
             {
                 var words = new List<string>();
-                Array.ForEach(input.Split(' '), w => words.Add(w.DeleteEndings()));
+                Array.ForEach(input.Split(' '), w => words.AddRange(w.GetSyllablesWithoutEndings()));
 
-                return string.Join(" ", words);
+                return words;
             }
             else
             {
@@ -238,13 +244,13 @@ namespace Search
                         int vowelsInEnding = ending.Intersect(Vowel).Count();
                         if (syllables.Count > vowelsInEnding)
                         {
-                            input = input.Substring(0, input.Length - ending.Length);
+                            syllables = syllables.Take(syllables.Count - vowelsInEnding).ToList();
                         }
                         break;
                     }
                 }
-
-                return input;
+                
+                return syllables.Take(syllables.Count / 2 + 1).ToList();
             }
         }
     }

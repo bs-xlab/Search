@@ -41,12 +41,12 @@ namespace Search
                 Search.Enabled = false;
             });
             
-            // Data loading
+            // Data loading - 5 sec
             var data = LoadSystemData();
 
             var brands = CastFrom<BrandModel>(data);
             var groups = CastFrom<GroupModel>(data);
-            var products = CastFrom<ProductModel>(data);
+            var products = CastFrom<ProductModel>(data).Take(50000).ToList();
 
             #region Test model
             //groups = new List<GroupModel>
@@ -76,11 +76,11 @@ namespace Search
             });
 
             // Craeting a syllables list
-            Syllables = groups.SelectMany(g => g.Name.DeleteEndings().GetSeparatedString()).ToList();
+            Syllables = groups.SelectMany(g => g.Name.GetSyllablesWithoutEndings()).ToList();
 
             var brandSyllables = brands.SelectMany(b => 
                 Regex.IsMatch(b.Name, "^[а-я0-9 ]+$") 
-                    ? b.Name.GetSeparatedString() 
+                    ? b.Name.GetSyllablesWithoutEndings() 
                     : b.Name.GetSeparatedStringEng())
                 .ToList();
 
@@ -95,30 +95,29 @@ namespace Search
 
             // TWO 10
             ExecuteExternalAction(() => Progress.Value = 10);
-
-            // Product filtering
+            
+            // Product filtering - 75 sec
             products = products.Where(p =>
-                !(groups.FirstOrDefault(g => g.ID == p.GroupID) is null) &&
-                !(brands.FirstOrDefault(b => b.ID == p.BrandID) is null))
-                .ToList();
+               !(groups.FirstOrDefault(g => g.ID == p.GroupID) is null) &&
+               !(brands.FirstOrDefault(b => b.ID == p.BrandID) is null) &&
+               p.BrandID != 0 && p.GroupID != 0)
+               .ToList();
 
             // THREE 15
             ExecuteExternalAction(() => Progress.Value = 15);
 
-            // Set products syllables
+            // Set products syllables - 206 sec
             products.ForEach(p =>
             {
                 var brandName = brands.First(b => b.ID == p.BrandID).Name;
                 var groupName = groups.First(g => g.ID == p.GroupID).Name;
 
                 var _brandSyllables = Regex.IsMatch(brandName, "^[а-я0-9 ]+$")
-                    ? brandName.GetSeparatedString()
+                    ? brandName.GetSyllablesWithoutEndings()
                     : brandName.GetSeparatedStringEng();
 
                 var brandIndexes = _brandSyllables.Select(s => Syllables.IndexOf(s)).Where(i => i != -1).ToList();
-
-                var groupWords = groupName.Split(' ');
-                var groupIndexesList = groupWords.Select(g => g.GetSeparatedString().Select(s => Syllables.IndexOf(s)).Where(i => i != -1).ToList()).ToList();
+                var groupIndexesList = groupName.Split(' ').Select(g => g.GetSyllablesWithoutEndings().Select(s => Syllables.IndexOf(s)).Where(i => i != -1).ToList()).ToList();
 
                 p.IndexesList = new List<List<int>>();
                 for (int offset = 0; offset < groupIndexesList.Count; offset++)
@@ -134,7 +133,7 @@ namespace Search
                 }
 
                 p.Syllables = _brandSyllables;
-                p.Syllables.AddRange(groups.First(g => g.ID == p.GroupID).Name.GetSeparatedString());
+                p.Syllables.AddRange(groups.First(g => g.ID == p.GroupID).Name.GetSyllablesWithoutEndings());
 
                 p.FullIdentity = $"{groupName} {brandName} {p.Name}";
             });
@@ -142,21 +141,20 @@ namespace Search
             // FOUR 20
             ExecuteExternalAction(() => Progress.Value = 20);
 
-            // Product Sorting
+            // Product Sorting - 22 sec
             products = products.OrderBy(p =>
                 p.Syllables.Select(s => Syllables.IndexOf(s))
                     .Where(i => i != -1).Min())
                     .ThenByDescending(p => p.Syllables.Count)
                     .ToList();
-
-            ExecuteExternalAction(() => Progress.Value = 15);
+            
             ProductHashDict = new Dictionary<Graph.Node, List<ProductModel>>();
 
             // FIVE 25
             ExecuteExternalAction(() => Progress.Value = 25);
             var productCount = 1;
 
-            // Hash dict creating
+            // Hash dict creating - 1800 sec
             products.ForEach(p =>
             {
                 bool validHash = false;
@@ -183,7 +181,7 @@ namespace Search
                     ProductHashDict[node].Add(p);
                 }
 
-                if (products.Count > 60 && productCount % (products.Count / 60) == 0)
+                if (products.Count > 60 && productCount++ % (products.Count / 60) == 0)
                 {
                     ExecuteExternalAction(() => Progress.Value++);
                 }
