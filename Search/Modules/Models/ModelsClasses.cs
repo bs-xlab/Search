@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using Search.Modules.Helpers;
 
-namespace Search
+namespace Search.Modules.Models
 {
-    abstract class BriefModel
+    public abstract class BriefModel
     {
         public int ID { get; set; }
         public string Name { get; set; }
     }
 
-    class ProductModel : BriefModel
+    public class ProductModel : BriefModel
     {
         public int BrandID { get; set; }
         public int GroupID { get; set; }
@@ -22,34 +22,36 @@ namespace Search
         public string FullIdentity { get; set; }
     }
 
-    class BrandModel : BriefModel
+    public class BrandModel : BriefModel
     {
-        public bool OnlyRussianWords { get; set; }
+        public bool HasRussianWords { get; set; }
     }
 
-    class GroupModel : BriefModel { }
+    public class GroupModel : BriefModel { }
 
-    class Graph
+    public class Graph
     {
         static Graph Instance;
         public Node Root { get; set; }
+        int ArrayCapacity;
 
-        public static Graph GetInstance()
+        public static Graph GetInstance(int arrayCapacity)
         {
             if (Instance is null)
             {
-                Instance = new Graph();
+                Instance = new Graph(arrayCapacity);
             }
 
             return Instance;
         }
 
-        Graph()
+        Graph(int arrayCapacity)
         {
-            Root = new Node(new bool[Form1.Syllables.Count]);
+            ArrayCapacity = arrayCapacity;
+            Root = new Node(new bool[arrayCapacity]);
         }
 
-        public List<Node> FindString(string input)
+        public List<Node> FindString(string input, List<string> mainSyllables)
         {
             var result = new List<Node>();
             input = input.Trim();
@@ -89,11 +91,11 @@ namespace Search
                     //allSyllables.AddRange(syllables);
 
                     bool found = false;
-                    var hash = new bool[Form1.Syllables.Count];
+                    var hash = new bool[ArrayCapacity];
 
                     syllables.ForEach(s =>
                     {
-                        var index = Form1.Syllables.IndexOf(s);
+                        var index = mainSyllables.IndexOf(s);
                         if (index != -1)
                         {
                             hash[index] = true;

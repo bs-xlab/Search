@@ -1,6 +1,6 @@
 ﻿namespace Search
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// Обязательная переменная конструктора.
@@ -58,11 +58,12 @@
             this.ListBox.ItemHeight = 16;
             this.ListBox.Location = new System.Drawing.Point(189, 122);
             this.ListBox.Name = "ListBox";
-            this.ListBox.Size = new System.Drawing.Size(362, 100);
+            this.ListBox.Size = new System.Drawing.Size(362, 4);
             this.ListBox.TabIndex = 2;
             // 
             // Search
             // 
+            this.Search.Enabled = false;
             this.Search.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Search.Location = new System.Drawing.Point(189, 96);
             this.Search.Name = "Search";
@@ -131,7 +132,7 @@
             this.checkBox1.UseVisualStyleBackColor = true;
             this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
-            // Form1
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -147,7 +148,7 @@
             this.Controls.Add(this.ListBox);
             this.Controls.Add(this.button1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.Text = "Search";
             this.ResumeLayout(false);
             this.PerformLayout();

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Search
+namespace Search.Modules.Helpers
 {
-    static class Extensions
+    static class StringExtensions
     {
         static string Vowel = "аеёиоуыэюя";                     // Гласные буквы
         static string Deaf = "кпстф";                           // Глухие согласные
@@ -121,23 +121,6 @@ namespace Search
             SyllablesList.Add(currentSyllable);
             return string.Join("-", SyllablesList).Split(splitSymbols, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
-
-        //public static IEnumerable<string> GetSeparatedStringEng(this string input)
-        //{
-        //    var glas = "eyuioa".ToCharArray();
-        //    var sb = new StringBuilder();
-        //    int i = 0;
-        //    for (; input.Skip(i).Count(glas.Contains) > 1; i++)
-        //    {
-        //        sb.Append(input[i]);
-        //        if (glas.Contains(input[i]))
-        //        {
-        //            yield return sb.ToString();
-        //            sb.Clear();
-        //        }
-        //    }
-        //    yield return input.Substring(i);
-        //}
 
         public static List<string> GetSeparatedStringEng(this string input)
         {
