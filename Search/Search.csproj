@@ -61,7 +61,8 @@
     </Compile>
     <Compile Include="Modules\Helpers\Extentions.cs" />
     <Compile Include="Modules\Helpers\Repository.cs" />
-    <Compile Include="Modules\Models\ModelsClasses.cs" />
+    <Compile Include="Modules\Models\Graph.cs" />
+    <Compile Include="Modules\Models\BriefModels.cs" />
     <Compile Include="Modules\Models\Worker.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

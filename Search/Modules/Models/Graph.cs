@@ -1,37 +1,15 @@
-﻿using System;
+﻿using Search.Modules.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Search.Modules.Helpers;
 
 namespace Search.Modules.Models
 {
-    public abstract class BriefModel
-    {
-        public int ID { get; set; }
-        public string Name { get; set; }
-    }
-
-    public class ProductModel : BriefModel
-    {
-        public int BrandID { get; set; }
-        public int GroupID { get; set; }
-        public List<string> Syllables { get; set; }
-        public List<List<int>> IndexesList { get; set; }
-        public string FullIdentity { get; set; }
-    }
-
-    public class BrandModel : BriefModel
-    {
-        public bool HasRussianWords { get; set; }
-    }
-
-    public class GroupModel : BriefModel { }
-
     public class Graph
     {
-        static Graph Instance;
+        static Lazy<Graph> Instance;
         public Node Root { get; set; }
         int ArrayCapacity;
 
@@ -39,10 +17,10 @@ namespace Search.Modules.Models
         {
             if (Instance is null)
             {
-                Instance = new Graph(arrayCapacity);
+                Instance = new Lazy<Graph>(new Func<Graph>(() => new Graph(arrayCapacity)));
             }
 
-            return Instance;
+            return Instance.Value;
         }
 
         Graph(int arrayCapacity)
@@ -63,17 +41,16 @@ namespace Search.Modules.Models
 
             if (!(lastWord is null))
             {
-
                 var offset = 0;
-                while (lastWord.Substring(0, lastWord.Length - offset) != string.Empty && result.Count == 0)
+                while (lastWord.Substring(0, lastWord.Length - offset) != string.Empty && result.Count < 10)
                 {
                     var targetString = input.Substring(0, input.Length - offset);
 
                     var syllables = (Regex.IsMatch(targetString, "^[а-я0-9 ]+$")
-                                ? targetString.GetSyllablesWithoutEndings()
-                                : targetString.GetSeparatedStringEng())
-                            .Distinct()
-                            .ToList();
+                        ? targetString.GetSyllablesWithoutEndings()
+                        : targetString.GetSeparatedStringEng())
+                    .Distinct()
+                    .ToList();
 
                     bool found = false;
                     var hash = new bool[ArrayCapacity];
@@ -215,7 +192,7 @@ namespace Search.Modules.Models
                 result[newIndex] = true;
                 return result;
             }
-            
+
             public Node FindHash(bool[] hash)
             {
                 if (hash == this)
@@ -257,7 +234,7 @@ namespace Search.Modules.Models
                     RightNode.GetChildren(childrens);
                 }
             }
-            
+
             public static bool operator &(bool[] hash, Node first)
             {
                 var resultArray = new bool[hash.Length];
@@ -293,41 +270,6 @@ namespace Search.Modules.Models
             }
 
             public static bool operator !=(bool[] hash, Node first) => !(hash == first);
-        }
-    }
-
-    public class NodesSorter : IComparer<Graph.Node>
-    {
-        Graph.Node _pattern;
-
-        public NodesSorter(Graph.Node pattern) => _pattern = pattern;
-
-        public int Compare(Graph.Node first, Graph.Node second)
-        {
-            int index = 0;
-
-            var countFirstPositions = 0;
-            Array.ForEach(first.HashSum, h =>
-            {
-                if (h ^ _pattern.HashSum[index]) countFirstPositions++;
-                index++;
-            });
-
-            index = 0;
-
-            var countSecondPositions = 0;
-            Array.ForEach(second.HashSum, h =>
-            {
-                if (h ^ _pattern.HashSum[index]) countSecondPositions++;
-                index++;
-            });
-
-            if (countFirstPositions > countSecondPositions)
-            {
-                return 1;
-            }
-
-            return countFirstPositions == countSecondPositions ? 0 : -1;
         }
     }
 }

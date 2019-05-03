@@ -36,7 +36,7 @@ namespace Search.Modules.Models
 
             var brands = Repository.CastFrom<BrandModel>(data);
             var groups = Repository.CastFrom<GroupModel>(data);
-            var products = Repository.CastFrom<ProductModel>(data).Take(50000).ToList();
+            var products = Repository.CastFrom<ProductModel>(data).Take(200000).ToList();
 
             #region Test product model
             //var products = new List<ProductModel>
@@ -67,16 +67,19 @@ namespace Search.Modules.Models
             {
                 b.Name = Regex.Replace(b.Name.ToLower(), "[^a-zа-я0-9 ]+", " ");
                 while (b.Name.Contains("  ")) b.Name = b.Name.Replace("  ", " ");
+
+                if (Regex.IsMatch(b.Name, "^[а-я0-9 ]+$"))
+                {
+                    b.HasRussianSymbols = true;
+                }
             });
 
             // Craeting a syllables list
             Syllables = groups.SelectMany(g => g.Name.GetSyllablesWithoutEndings()).ToList();
 
-            var brandSyllables = brands.SelectMany(b =>
-                Regex.IsMatch(b.Name, "^[а-я0-9 ]+$")
-                    ? b.Name.GetSyllablesWithoutEndings()
-                    : b.Name.GetSeparatedStringEng())
-                .ToList();
+            var brandSyllables = brands.SelectMany(b => b.HasRussianSymbols 
+                ? b.Name.GetSyllablesWithoutEndings() 
+                : b.Name.GetSeparatedStringEng());
 
             Syllables.AddRange(brandSyllables);
 
@@ -87,7 +90,7 @@ namespace Search.Modules.Models
                 .OrderByDescending(k => k.Value)
                 .Select(x => x.Key).ToList();
 
-            // Product filtering - 75 sec
+            // Product filtering
             products = products.Where(p =>
                !(groups.FirstOrDefault(g => g.ID == p.GroupID) is null) &&
                !(brands.FirstOrDefault(b => b.ID == p.BrandID) is null) &&
@@ -99,15 +102,19 @@ namespace Search.Modules.Models
             // Set products syllables
             products.ForEach(p =>
             {
-                var brandName = brands.First(b => b.ID == p.BrandID).Name;
+                var targetBrand = brands.First(b => b.ID == p.BrandID);
+
+                var brandName = targetBrand.Name;
                 var groupName = groups.First(g => g.ID == p.GroupID).Name;
 
-                var _brandSyllables = Regex.IsMatch(brandName, "^[а-я0-9 ]+$")
-                    ? brandName.GetSyllablesWithoutEndings()
+                var targetBrandSyllables = targetBrand.HasRussianSymbols 
+                    ? brandName.GetSyllablesWithoutEndings() 
                     : brandName.GetSeparatedStringEng();
 
-                var brandIndexes = _brandSyllables.Select(s => Syllables.IndexOf(s)).Where(i => i != -1).ToList();
-                var groupIndexesList = groupName.Split(' ').Select(g => g.GetSyllablesWithoutEndings().Select(s => Syllables.IndexOf(s)).Where(i => i != -1).ToList()).ToList();
+                var brandIndexes = targetBrandSyllables.Select(s => Syllables.IndexOf(s)).Where(i => i != -1).ToList();
+                var groupIndexesList = groupName.Split(' ').Select(g => 
+                    g.GetSyllablesWithoutEndings().Select(s => 
+                        Syllables.IndexOf(s)).Where(i => i != -1).ToList()).ToList();
 
                 p.IndexesList = new List<List<int>>();
                 for (int offset = 0; offset < groupIndexesList.Count; offset++)
@@ -122,7 +129,7 @@ namespace Search.Modules.Models
                     p.IndexesList[p.IndexesList.Count - 1].AddRange(list.SelectMany(l => l).ToList());
                 }
 
-                p.Syllables = _brandSyllables;
+                p.Syllables = targetBrandSyllables;
                 p.Syllables.AddRange(groups.First(g => g.ID == p.GroupID).Name.GetSyllablesWithoutEndings());
 
                 p.FullIdentity = $"{groupName} {brandName} {p.Name}";
@@ -192,20 +199,17 @@ namespace Search.Modules.Models
             var result = new List<string>();
             var output = Graph.FindString(input, Syllables);
 
-            output.Result.Sort(new NodesSorter(output.FoundedNode));
-            var count = 0;
+            //output.Result.Sort(new NodesSorter(output.FoundedNode));
 
             output.Result.ForEach(c =>
             {
                 if (ProductHashDict.ContainsKey(c))
                 {
-                    ProductHashDict[c].ForEach(p =>
-                    {
-                        count++;
-                        result.Add(p.FullIdentity);
-                    });
+                    ProductHashDict[c].ForEach(p => result.Add(p.FullIdentity));
                 }
             });
+
+            result.Sort(new TitlesComparer(input));
 
             return result;
         }
