@@ -36,12 +36,14 @@ namespace Search.Modules.Models
 
             var brands = Repository.CastFrom<BrandModel>(data);
             var groups = Repository.CastFrom<GroupModel>(data);
-            var products = Repository.CastFrom<ProductModel>(data).Take(200000).ToList();
+            var products = Repository.CastFrom<ProductModel>(data).Take(100000).ToList();
 
             #region Test product model
             //var products = new List<ProductModel>
             //{
-            //    new ProductModel { BrandID = 47, GroupID = 21, Name = "A-0822 R", ID = 8569}
+            //    new ProductModel { BrandID = 47, GroupID = 21, Name = "A-0822 RL", ID = 856},
+            //    new ProductModel { BrandID = 47, GroupID = 19, Name = "A-0822 RP", ID = 869},
+            //    new ProductModel { BrandID = 47, GroupID = 20, Name = "A-0822 RD", ID = 569}
             //};
             #endregion
 
@@ -199,8 +201,6 @@ namespace Search.Modules.Models
             var result = new List<string>();
             var output = Graph.FindString(input, Syllables);
 
-            //output.Result.Sort(new NodesSorter(output.FoundedNode));
-
             output.Result.ForEach(c =>
             {
                 if (ProductHashDict.ContainsKey(c))
@@ -209,8 +209,7 @@ namespace Search.Modules.Models
                 }
             });
 
-            result.Sort(new TitlesComparer(input));
-
+            result = result.OrderBy(p => p, new TitlesComparer(input)).ThenBy(p => p, new DistanceComparer(input)).ToList();
             return result;
         }
     }

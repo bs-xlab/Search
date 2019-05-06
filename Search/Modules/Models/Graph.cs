@@ -32,7 +32,7 @@ namespace Search.Modules.Models
         public (List<Node> Result, Node FoundedNode) FindString(string input, List<string> mainSyllables)
         {
             var result = new List<Node>();
-            input = input.Trim();
+            input = input.Trim().ToLower();
 
             var inputWords = input.Split(' ');
             var lastWord = inputWords.LastOrDefault();
@@ -176,7 +176,7 @@ namespace Search.Modules.Models
                 }
             }
 
-            public override bool Equals(object obj) => true; // ((Node)obj).HashSum == this;
+            public override bool Equals(object obj) => ((Node)obj).HashSum == this; // true
 
             public override int GetHashCode() => _hashCode;
 
@@ -215,6 +215,8 @@ namespace Search.Modules.Models
 
             public void GetChildren(List<Node> childrens)
             {
+                if (childrens.Count > 9) return;
+
                 if (LeftNode is null && RightNode is null)
                 {
                     if (!childrens.Contains(this)) childrens.Add(this);
