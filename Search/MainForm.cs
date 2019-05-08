@@ -60,7 +60,8 @@ namespace Search
 
         private void Search_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue > 64 && e.KeyValue < 91)
+            // KEYS: A-Z, BACKSPACE, 0-9
+            if (e.KeyValue > 64 && e.KeyValue < 91 || e.KeyCode == Keys.Back || e.KeyValue > 47 && e.KeyValue < 58)
             {
                 Task.Run(() =>
                 {

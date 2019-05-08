@@ -36,7 +36,7 @@ namespace Search.Modules.Models
 
             var brands = Repository.CastFrom<BrandModel>(data);
             var groups = Repository.CastFrom<GroupModel>(data);
-            var products = Repository.CastFrom<ProductModel>(data).Take(100000).ToList();
+            var products = Repository.CastFrom<ProductModel>(data).Take(5000).ToList();
 
             #region Test product model
             //var products = new List<ProductModel>
@@ -135,6 +135,7 @@ namespace Search.Modules.Models
                 p.Syllables.AddRange(groups.First(g => g.ID == p.GroupID).Name.GetSyllablesWithoutEndings());
 
                 p.FullIdentity = $"{groupName} {brandName} {p.Name}";
+                p.Name = p.Name.ToLower().Trim();
             });
             
             FormInterface.ChangeProgressBarValue(14);
@@ -198,19 +199,28 @@ namespace Search.Modules.Models
 
         public List<string> FindProducts(string input)
         {
-            var result = new List<string>();
-            var output = Graph.FindString(input, Syllables);
+            var result = new List<ProductModel>();
+            var report = Graph.FindString(input, Syllables);
 
-            output.Result.ForEach(c =>
+            report.Result.ForEach(c =>
             {
                 if (ProductHashDict.ContainsKey(c))
                 {
-                    ProductHashDict[c].ForEach(p => result.Add(p.FullIdentity));
+                    ProductHashDict[c].ForEach(p => result.Add(p));
                 }
             });
 
-            result = result.OrderBy(p => p, new TitlesComparer(input)).ThenBy(p => p, new DistanceComparer(input)).ToList();
-            return result;
+            var model = string.Join(" ", report.FoundedModels);
+
+            var sortedProducts = result.OrderBy(p => p, new DistanceComparer(model)).ToList(); //.ThenBy(p => p, new TitlesComparer(input)).ToList();
+            return sortedProducts.Select(p => p.FullIdentity).ToList();
         }
+    }
+
+    public class WorkerReport
+    {
+        public List<Graph.Node> Result { get; set; }
+        public Graph.Node FoundedNode { get; set; }
+        public Queue<string> FoundedModels { get; set; }
     }
 }

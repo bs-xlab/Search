@@ -29,21 +29,40 @@ namespace Search.Modules.Models
             Root = new Node(new bool[arrayCapacity]);
         }
 
-        public (List<Node> Result, Node FoundedNode) FindString(string input, List<string> mainSyllables)
+        public WorkerReport FindString(string input, List<string> mainSyllables)
         {
-            var result = new List<Node>();
+            var report = new WorkerReport
+            {
+                Result = new List<Node>(),
+                FoundedNode = new Node(new bool[mainSyllables.Count]),
+                FoundedModels = new Queue<string>()
+            };
+
             input = input.Trim().ToLower();
 
-            var inputWords = input.Split(' ');
-            var lastWord = inputWords.LastOrDefault();
-
-            var foundedNode = new Node(new bool[mainSyllables.Count]);
-
-            if (!(lastWord is null))
+            if (!string.IsNullOrEmpty(input))
             {
                 var offset = 0;
-                while (lastWord.Substring(0, lastWord.Length - offset) != string.Empty && result.Count < 10)
+                while (input.Substring(0, input.Length - offset) != string.Empty && report.Result.Count < 10)
                 {
+                    // check if last word is a model
+                    var lastWord = input.Split(' ').Last();
+
+                    var lastWordSyllables = (Regex.IsMatch(lastWord, "^[а-я0-9 ]+$")
+                        ? lastWord.GetSyllablesWithoutEndings()
+                        : lastWord.GetSeparatedStringEng())
+                    .Distinct()
+                    .ToList();
+
+                    var commonSyllablesCount = mainSyllables.Intersect(lastWordSyllables).Count();
+
+                    if (commonSyllablesCount == 0)
+                    {
+                        report.FoundedModels.Enqueue(lastWord);
+                        input = input.Substring(0, input.Length - lastWord.Length - 1);
+                        offset = 0;
+                    }
+
                     var targetString = input.Substring(0, input.Length - offset);
 
                     var syllables = (Regex.IsMatch(targetString, "^[а-я0-9 ]+$")
@@ -67,18 +86,18 @@ namespace Search.Modules.Models
 
                     if (found)
                     {
-                        foundedNode = Root.FindHash(hash);
+                        report.FoundedNode = Root.FindHash(hash);
 
-                        if (!(foundedNode is null))
+                        if (!(report.FoundedNode is null))
                         {
-                            foundedNode.GetChildren(result);
+                            report.FoundedNode.GetChildren(report.Result);
                         }
                     }
                     offset++;
                 }
             }
 
-            return (result, foundedNode);
+            return report;
         }
 
         public void AddNode(List<List<int>> indexesList)
@@ -215,7 +234,7 @@ namespace Search.Modules.Models
 
             public void GetChildren(List<Node> childrens)
             {
-                if (childrens.Count > 9) return;
+                //if (childrens.Count > 9) return;
 
                 if (LeftNode is null && RightNode is null)
                 {

@@ -60,19 +60,40 @@ namespace Search.Modules.Models
         }
     }
 
-    public class DistanceComparer : IComparer<string>
+    public class DistanceComparer : IComparer<ProductModel>
     {
         string _input;
 
         public DistanceComparer(string input) => _input = input;
 
-        public int Compare(string first, string second)
+        public int Compare(ProductModel first, ProductModel second)
         {
-            var firstDistance = CalcLevenshteinDistance(first, _input);
-            var secondDistance = CalcLevenshteinDistance(second, _input);
+            var firstWords = first.Name.Split(' ');
+            var secondWords = second.Name.Split(' ');
+            var inputWords = _input.Split(' ');
 
-            if (firstDistance < secondDistance) return -1;
-            return firstDistance == secondDistance ? 0 : 1;
+            //if (first.Name == second.Name)
+            //{
+            //    return 0;
+            //}
+
+            //firstWords = firstWords.Except(secondWords).ToArray();
+            //secondWords = secondWords.Except(firstWords).ToArray();
+
+            //if (first.Name.Contains("s530-001") && second.Name.Contains("s530-002") ||
+            //    first.Name.Contains("s530-002") && second.Name.Contains("s530-001"))
+            //{ }
+
+            int minFirstDistance = _input.Split(' ').ToList().Min(iw =>
+               firstWords.ToList().Min(fw =>
+                   CalcLevenshteinDistance(fw, iw)));
+
+            int minSecondDistance = _input.Split(' ').ToList().Min(iw =>
+                    secondWords.ToList().Min(sw =>
+                        CalcLevenshteinDistance(sw, iw)));
+
+            if (minFirstDistance < minSecondDistance) return -1;
+            return minFirstDistance == minSecondDistance ? 0 : 1;
         }
 
         static int CalcLevenshteinDistance(string a, string b)
